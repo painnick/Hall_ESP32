@@ -15,29 +15,48 @@
 #define CH_MOTOR2 3
 
 boolean motorStop = false;
+boolean isMotorUp = false;
 
 boolean nearMax = false;
 boolean nearMin = false;
 
-void motorMoveUp() {
-    if (nearMax) {
-        ESP_LOGW(MAIN_TAG, "Skip Motor up!");
-    } else {
-        ESP_LOGI(MAIN_TAG, "Motor up...");
+void motorMoveUp(boolean noLimit = false) {
+    if (noLimit) {
+        ESP_LOGI(MAIN_TAG, "Motor up(NO LIMIT)...");
         motorStop = false;
+        isMotorUp = true;
         ledcWrite(CH_MOTOR1, 255);
         ledcWrite(CH_MOTOR2, 0);
+    } else {
+        if (nearMax) {
+            ESP_LOGW(MAIN_TAG, "Skip Motor up!");
+        } else {
+            ESP_LOGI(MAIN_TAG, "Motor up...");
+            motorStop = false;
+            isMotorUp = true;
+            ledcWrite(CH_MOTOR1, 255);
+            ledcWrite(CH_MOTOR2, 0);
+        }
     }
 }
 
-void motorMoveDown() {
-    if (nearMin) {
-        ESP_LOGW(MAIN_TAG, "Skip Motor down!");
-    } else {
-        ESP_LOGI(MAIN_TAG, "Motor down...");
+void motorMoveDown(boolean noLimit = false) {
+    if (noLimit) {
+        ESP_LOGI(MAIN_TAG, "Motor down(NO LIMIT)...");
         motorStop = false;
+        isMotorUp = false;
         ledcWrite(CH_MOTOR1, 0);
         ledcWrite(CH_MOTOR2, 255);
+    } else {
+        if (nearMin) {
+            ESP_LOGW(MAIN_TAG, "Skip Motor down!");
+        } else {
+            ESP_LOGI(MAIN_TAG, "Motor down...");
+            motorStop = false;
+            isMotorUp = false;
+            ledcWrite(CH_MOTOR1, 0);
+            ledcWrite(CH_MOTOR2, 255);
+        }
     }
 }
 
@@ -72,15 +91,26 @@ void setup() {
 }
 
 void loop() {
-    if (touchRead(PIN_TOUCH_UP) < 32) {
-        motorMoveUp();
-        nearMin = false;
-    } else if (touchRead(PIN_TOUCH_DOWN) < 32) {
-        motorMoveDown();
-        nearMax = false;
+    auto isUp = touchRead(PIN_TOUCH_UP) < 32;
+    auto isDown = touchRead(PIN_TOUCH_DOWN) < 32;
+    if (isUp && isDown) {
+        if (isMotorUp) {
+            motorMoveUp(true);
+        } else {
+            // Should be stop!
+            // motorMoveDown(true);
+        }
     } else {
-        if (!motorStop)
-            motorMoveStop();
+        if (isUp) {
+            motorMoveUp();
+            nearMin = false;
+        } else if (isDown) {
+            motorMoveDown();
+            nearMax = false;
+        } else {
+            if (!motorStop)
+                motorMoveStop();
+        }
     }
     delay(100);
 }
