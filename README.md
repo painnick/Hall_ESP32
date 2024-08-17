@@ -1,2 +1,2 @@
-# Hall ASensor
+# Hall Sensor
 
